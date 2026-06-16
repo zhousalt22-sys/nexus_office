@@ -128,8 +128,8 @@ const AGENTS_CONFIG = {
   'writer':     {name:'乐乐', emoji:'📝', role:'PRD/Brief', status:'idle',   task:'待搭建',   zone:'right'},
   'data-guard': {name:'查查', emoji:'📊', role:'数据监控',  status:'idle',   task:'待搭建',   zone:'right'},
 };
-const API_KEY  = ''; // TODO: 填入1024 API Key
-const API_URL  = ''; // TODO: 填入1024 API URL
+const API_KEY  = 'rmk_0b1a66358b95467c9736b586a4e1e8f2';
+const API_URL  = 'https://1024.sankuai.com/openapi-v3/react/chat/stream';
 const AGENT_NAMES = {'m-teacher':'M_Sensei'};
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2083,7 +2083,6 @@ function addBubble(type,text) {
 
 // SSE streaming API call
 async function streamChat(message) {
-  if (!API_KEY) { addBubble('agent', '🔑 1024 接入待配置，请先填入 API Key'); return; }
   setHeadBubble('m-teacher', 'thinking', '');
   const agentEl = addBubble('agent','');
   agentEl.classList.add('thinking');
