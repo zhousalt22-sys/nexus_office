@@ -10,10 +10,10 @@ body{background:#1a0f2e;overflow:hidden;font-family:'PingFang SC','Microsoft YaH
 #titleBar{
   position:fixed;top:0;left:0;right:0;height:50px;
   background:linear-gradient(135deg,#1a0f2e 0%,#2d1a45 100%);
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:flex-start;
   z-index:100;border-bottom:2px solid rgba(220,168,255,0.45);
 }
-#titleBar h1{
+#titleBar h1{position:absolute;left:18px;
   font-size:18px;letter-spacing:8px;font-weight:900;
   font-family:'Georgia',serif;
   background:linear-gradient(90deg,
@@ -42,9 +42,9 @@ body{background:#1a0f2e;overflow:hidden;font-family:'PingFang SC','Microsoft YaH
 }
 @keyframes goldFlow{to{background-position:300% center}}
 @keyframes shimmer{to{background-position:200% center}}
-#titleBar .clock{position:absolute;right:230px;color:#f0abfc;font-size:12px;font-family:monospace;letter-spacing:1px}
-#testBtn{position:absolute;right:16px;padding:5px 11px;background:rgba(74,85,104,0.7);border:1px solid #718096;color:#e2e8f0;font-size:11px;border-radius:5px;cursor:pointer}
-#dispatchBtn{position:absolute;right:100px;padding:5px 11px;background:rgba(168,85,247,0.5);border:1px solid #a855f7;color:#f0e6ff;font-size:11px;border-radius:5px;cursor:pointer}
+#titleBar .clock{position:absolute;color:#f0abfc;font-size:12px;font-family:monospace;letter-spacing:1px}
+#testBtn{position:absolute;padding:5px 11px;background:rgba(74,85,104,0.7);border:1px solid #718096;color:#e2e8f0;font-size:11px;border-radius:5px;cursor:pointer}
+#dispatchBtn{position:absolute;padding:5px 11px;background:rgba(168,85,247,0.5);border:1px solid #a855f7;color:#f0e6ff;font-size:11px;border-radius:5px;cursor:pointer}
 #testBtn:hover{background:#718096}
 #tooltip{
   position:fixed;display:none;
@@ -137,7 +137,7 @@ const AGENT_NAMES = {'m-teacher':'M_Sensei'};
 // ═══════════════════════════════════════════════════════════════════
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-const TITLE_H = 50;
+const TITLE_H = 50; // CSS像素，canvas坐标折算时除以PIXEL_SCALE
 const P  = 2;
 let TW, TH, TZ, originX, originY;
 const RW = 12, RD = 9, WH = 4;
@@ -286,6 +286,36 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
+function alignTitle() {
+  // 左墙最左点：iso(0, RD, 0) 的 x 坐标
+  const leftX = iso(0, RD, 0).x;
+  const h1 = document.querySelector('#titleBar h1');
+  if (h1) h1.style.left = Math.max(12, leftX) + 'px';
+
+  // 右侧按钮：通知按钮右边缘对齐后墙右边缘 iso(RW, 0, 0).x
+  const rightX = iso(RW, 0, 0).x;  // 后墙右边缘 x
+  const W = window.innerWidth;
+  const margin = 8;
+  const testBtn = document.getElementById('testBtn');
+  const dispatchBtn = document.getElementById('dispatchBtn');
+  const clockEl = document.querySelector('#titleBar .clock');
+  if (testBtn) {
+    const tw = testBtn.offsetWidth || 68;
+    testBtn.style.left = (rightX - tw) + 'px';
+  }
+  if (dispatchBtn) {
+    const tw = testBtn ? (testBtn.offsetWidth || 68) : 68;
+    const dw = dispatchBtn.offsetWidth || 80;
+    dispatchBtn.style.left = (rightX - tw - dw - margin) + 'px';
+  }
+  if (clockEl) {
+    const tw = testBtn ? (testBtn.offsetWidth || 68) : 68;
+    const dw = dispatchBtn ? (dispatchBtn.offsetWidth || 80) : 80;
+    clockEl.style.left = (rightX - tw - dw - margin * 2 - (clockEl.offsetWidth || 80)) + 'px';
+  }
+}
+window.addEventListener('resize', alignTitle);
+
 // ═══════════════════════════════════════════════════════════════════
 //  DRAWING PRIMITIVES
 // ═══════════════════════════════════════════════════════════════════
@@ -379,7 +409,6 @@ function drawBackWall() {
   }
   // 踢脚线
   wallFaceY(0, 0, RW, 0.18, '#c8b8e8', null);
-  // 墙顶厚度面
   wallTopY(0, 0, RW, '#d8d0f0');
 }
 
@@ -401,7 +430,6 @@ function drawLeftWall() {
   }
   // 踢脚线
   wallFaceX(0, 0, RD, 0.18, '#d8a8d8', null);
-  // 墙顶厚度面
   wallTopX(0, 0, RD, '#e0d0f8');
 }
 
@@ -444,30 +472,29 @@ function drawRightPartition() {
 function drawGlassOfficeBack() {
   // Left glass wall: ix=4, iy=0..3 — 浅黄玻璃
   poly([iso(4,0,0),iso(4,3,0),iso(4,3,WH),iso(4,0,WH)],
-       'rgba(255,248,200,0.13)','rgba(220,190,80,0.30)',1.0);
+       'rgba(240,240,255,0.22)','rgba(200,200,220,0.45)',1.0);
   // Frame rails — 奶黄边框
-  poly([iso(4,0,WH),iso(4,3,WH)], null,'rgba(230,200,80,0.50)',1.5);
-  poly([iso(4,0,0), iso(4,0,WH)], null,'rgba(230,200,80,0.45)',1.2);
-  poly([iso(4,3,0), iso(4,3,WH)], null,'rgba(230,200,80,0.45)',1.2);
+  poly([iso(4,0,WH),iso(4,3,WH)], null,'rgba(220,220,240,0.60)',1.5);
+  poly([iso(4,0,0), iso(4,0,WH)], null,'rgba(220,220,240,0.50)',1.2);
   // Glass sheen lines — 浅黄透明
   for (let h=1;h<WH;h++) {
-    poly([iso(4,0,h),iso(4,3,h)], null,'rgba(255,245,180,0.10)',0.6);
+    poly([iso(4,0,h),iso(4,3,h)], null,'rgba(240,240,255,0.08)',0.6);
   }
 }
 function drawGlassOfficeFront() {
   // Front glass wall: iy=3, ix=4..8 — 浅黄玻璃
   poly([iso(4,3,0),iso(5.8,3,0),iso(5.8,3,WH),iso(4,3,WH)],
-       'rgba(255,248,200,0.15)','rgba(220,190,80,0.28)',1.0);
+       'rgba(240,240,255,0.22)','rgba(200,200,220,0.45)',1.0);
   poly([iso(6.8,3,0),iso(8,3,0),iso(8,3,WH),iso(6.8,3,WH)],
-       'rgba(255,248,200,0.15)','rgba(220,190,80,0.28)',1.0);
+       'rgba(240,240,255,0.22)','rgba(200,200,220,0.45)',1.0);
   // 门框 — 奶黄色边框
   poly([iso(5.8,3,0),iso(6.8,3,0),iso(6.8,3,1.5),iso(5.8,3,1.5)],
-       'rgba(255,248,200,0.10)','rgba(230,200,80,0.45)',1.2);
+       'rgba(240,240,255,0.10)','rgba(255,255,255,0.85)',1.0);
 
   // 门扇竖分缝（中线，只画到门高 1.5）
-  poly([iso(6.3,3,0), iso(6.3,3,1.5)], null,'rgba(200,170,50,0.55)',1.0);
+  poly([iso(6.3,3,0), iso(6.3,3,1.5)], null,'rgba(210,210,230,0.60)',1.0);
   // 门扇横分缝（门宽全段，高度约门一半 0.75，代表两扇门横向接缝）
-  poly([iso(5.8,3,0.75), iso(6.8,3,0.75)], null,'rgba(200,170,50,0.55)',1.0);
+  poly([iso(5.8,3,0.75), iso(6.8,3,0.75)], null,'rgba(210,210,230,0.60)',1.0);
 
   // 门把手（右扇门左侧，小圆弧拉手）
   {
@@ -475,28 +502,43 @@ function drawGlassOfficeFront() {
     const hTop  = iso(6.28, 3, 0.92); // 把手顶部
     ctx.save();
     // 把手杆
-    ctx.strokeStyle='rgba(180,150,40,0.9)'; ctx.lineWidth=2.5; ctx.lineCap='round';
+    ctx.strokeStyle='rgba(255,255,255,0.90)'; ctx.lineWidth=1.0; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(hBase.x, hBase.y); ctx.lineTo(hTop.x, hTop.y); ctx.stroke();
     // 把手头（小圆弧，模拟D形拉手）
     const hc = iso(6.28, 3, 0.76);
-    ctx.strokeStyle='rgba(230,200,60,0.95)'; ctx.lineWidth=2.0;
+    ctx.strokeStyle='rgba(255,255,255,0.90)'; ctx.lineWidth=1.0;
     ctx.beginPath();
     ctx.arc(hc.x - 4, hc.y, 4, -Math.PI*0.4, Math.PI*0.4);
     ctx.stroke();
     // 把手底座（小矩形）
-    ctx.fillStyle='rgba(200,170,40,0.8)';
+    ctx.fillStyle='rgba(255,255,255,0.85)';
     ctx.fillRect(hBase.x-2, hBase.y-1, 4, 3);
     ctx.fillRect(hTop.x-2, hTop.y-1, 4, 3);
     ctx.restore();
   }
 
   // Top rail
-  poly([iso(4,3,WH),iso(8,3,WH)], null,'rgba(230,200,80,0.50)',1.5);
-  poly([iso(4,3,0), iso(4,3,WH)], null,'rgba(230,200,80,0.40)',1.2);
-  poly([iso(8,3,0), iso(8,3,WH)], null,'rgba(230,200,80,0.40)',1.2);
+  poly([iso(4,3,WH),iso(8,3,WH)], null,'rgba(220,220,240,0.60)',1.5);
+  poly([iso(4,3,0), iso(4,3,WH)], null,'rgba(220,220,240,0.50)',1.2);
   for (let h=1;h<WH;h++) {
-    poly([iso(4,3,h),iso(8,3,h)], null,'rgba(255,245,180,0.07)',0.5);
+    poly([iso(4,3,h),iso(8,3,h)], null,'rgba(240,240,255,0.06)',0.5);
   }
+  // ── 玻璃外框白色描边 5px ──
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.90)';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  // 后墙玻璃顶边 + 后墙竖边
+  ctx.beginPath();
+  ctx.moveTo(iso(4,0,0).x,  iso(4,0,0).y);   // 后墙底脚
+  ctx.lineTo(iso(4,0,WH).x, iso(4,0,WH).y);  // 后墙顶脚
+  ctx.lineTo(iso(4,3,WH).x, iso(4,3,WH).y);  // 后墙顶边 → 前墙顶边交点
+  ctx.lineTo(iso(8,3,WH).x, iso(8,3,WH).y);  // 前墙顶边末端
+  ctx.lineTo(iso(8,3,0).x,  iso(8,3,0).y);   // 右侧竖边底
+  ctx.stroke();
+  ctx.restore();
+
   // "NEXUS" label — pastel pink
   const lp = iso(6, 3, WH*0.55);
   ctx.save();
@@ -1196,6 +1238,82 @@ function _badge(sx,cy,name){
   ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(name,sx,cy+1);
 }
 
+
+// ── ☕ COFFEE MACHINE ──────────────────────────────────────────
+function drawCoffeeMachine(ix, iy) {
+  const BW=0.55, BD=0.45, BH=0.9;  // 机身尺寸
+  const TW=0.35, TD=0.35, TH=0.22; // 顶部出水台
+  const CW=0.18, CD=0.18, CH=0.18; // 咖啡杯
+
+  // ── 机身主体 ──
+  isoBox(ix,       iy,       0,   BW,BD,BH,
+         '#2d1a4a', '#1e1030', '#261540', 0);
+
+  // 机身正面面板（浅色显示屏区）
+  const p1=iso(ix,      iy+BD, BH*0.35);
+  const p2=iso(ix+BW,   iy+BD, BH*0.35);
+  const p3=iso(ix+BW,   iy+BD, BH*0.75);
+  const p4=iso(ix,      iy+BD, BH*0.75);
+  poly([p1,p2,p3,p4], 'rgba(120,80,200,0.6)', 'rgba(180,120,255,0.5)', 0.8);
+
+  // 显示屏小矩形（亮紫蓝）
+  const s1=iso(ix+0.1,    iy+BD, BH*0.45);
+  const s2=iso(ix+BW-0.1, iy+BD, BH*0.45);
+  const s3=iso(ix+BW-0.1, iy+BD, BH*0.68);
+  const s4=iso(ix+0.1,    iy+BD, BH*0.68);
+  poly([s1,s2,s3,s4], 'rgba(80,200,255,0.5)', 'rgba(100,220,255,0.8)', 0.6);
+
+  // 屏幕发光小字（"☕"）
+  const sc = iso(ix+BW/2, iy+BD, BH*0.565);
+  ctx.save();
+  ctx.font = 'bold 8px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.textAlign = 'center';
+  ctx.fillText('☕', sc.x, sc.y+3);
+  ctx.restore();
+
+  // 机身侧面按钮
+  const b1=iso(ix+BW, iy+BD*0.3, BH*0.55);
+  const b2=iso(ix+BW, iy+BD*0.7, BH*0.55);
+  poly([b1], '#e0c0ff', null, 0);
+  ctx.save();
+  ctx.fillStyle='rgba(220,180,255,0.9)';
+  ctx.beginPath(); ctx.arc(b1.x, b1.y, 3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(b2.x, b2.y, 3, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // ── 顶部出水台（出咖啡的地方）──
+  isoBox(ix+(BW-TW)/2, iy+(BD-TD)/2, BH, TW,TD,TH,
+         '#3a2060', '#2a1550', '#321858', 0);
+
+  // 出水口小管（顶部前方）
+  const noz = iso(ix+BW/2, iy+BD*0.5, BH+TH);
+  ctx.save();
+  ctx.strokeStyle='rgba(100,60,180,0.9)'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(noz.x, noz.y); ctx.lineTo(noz.x, noz.y+8); ctx.stroke();
+  // 出水口滴落
+  ctx.fillStyle='rgba(140,80,220,0.7)';
+  ctx.beginPath(); ctx.arc(noz.x, noz.y+10, 2, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // ── 咖啡杯（放在出水口正下方）──
+  const cx = ix+(BW-CW)/2, cy = iy+(BD-CD)/2;
+  isoBox(cx, cy, 0, CW,CD,CH,
+         '#f5e6c8', '#e8d4a8', '#dbc290', 0);
+  // 杯内咖啡液面（深棕）
+  const cup1=iso(cx,    cy+CD, CH*0.7);
+  const cup2=iso(cx+CW, cy+CD, CH*0.7);
+  const cup3=iso(cx+CW, cy+CD, CH);
+  const cup4=iso(cx,    cy+CD, CH);
+  poly([cup1,cup2,cup3,cup4], 'rgba(80,40,10,0.6)', null, 0);
+
+  // 杯子把手（小圆弧）
+  const hc = iso(cx+CW, cy+CD*0.5, CH*0.45);
+  ctx.save();
+  ctx.strokeStyle='rgba(200,160,80,0.9)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(hc.x+4, hc.y, 4, -Math.PI*0.5, Math.PI*0.5); ctx.stroke();
+  ctx.restore();
+}
 // ── 🦜 PARROT ──────────────────────────────────────────────────
 function drawParrot(sx,cy,f){
   const typing=AGENTS_CONFIG['pipi'].status==='online'&&(f%20<10);
@@ -1456,6 +1574,7 @@ function render() {
   drawMonstera(0.3, 0.5, '#fef3c7');   // 奶黄
   drawCactus(0.2, 5.5,  '#c4b5fd');   // 马卡龙淡紫
   drawMonstera(0.3, 7.5, '#fef3c7');  // 奶黄
+  drawCoffeeMachine(0.3, 2.8);         // ☕ 咖啡机（左墙边，玻璃门旁）
 
 
   // ── LAYER 4: Glass office back walls ────────────────────────
@@ -1559,10 +1678,12 @@ function render() {
 
   // ── LAYER 11: 右上角遮罩 ─────────────────────────────────────
   drawCornerMask();
-
   animFrame++;
   requestAnimationFrame(render);
 }
+
+// ── 圆点像素化后处理 ──
+
 
 // ── 头顶气泡绘制 ──
 function drawHeadBubble() {
@@ -1843,15 +1964,13 @@ function updateCuckoo() {
 
 
 function drawCornerMask() {
-  // 右墙最右边缘是 ix=RW, iy=0（x最大的那条线）
-  // iso(RW,0,z).x = RW*TW/2 + originX  —— 这才是画面最右的等轴测点
-  // 把这条线右侧到屏幕右边全部盖掉
   const pBot = iso(RW, 0, 0);   // 右墙右下角
   const pTop = iso(RW, 0, WH);  // 右墙右上角
   const W = canvas.width / DPR;
+
+  // ── 黑色遮罩盖掉右侧超出区域 ──
   ctx.save();
   ctx.fillStyle = '#1a0f2e';
-  // 右上三角：pTop → 屏幕右上 → 屏幕pTop.y高度
   ctx.beginPath();
   ctx.moveTo(pTop.x, pTop.y);
   ctx.lineTo(W, pTop.y);
@@ -1859,7 +1978,6 @@ function drawCornerMask() {
   ctx.lineTo(pTop.x, 0);
   ctx.closePath();
   ctx.fill();
-  // pTop到pBot之间斜线右侧三角
   ctx.beginPath();
   ctx.moveTo(pTop.x, pTop.y);
   ctx.lineTo(W, pTop.y);
@@ -1868,6 +1986,30 @@ function drawCornerMask() {
   ctx.closePath();
   ctx.fill();
   ctx.restore();
+
+  // ── 房间外轮廓白色描边 ──
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 10;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const p_tl = iso(0,  0,  WH);
+  const p_lt = iso(0,  RD, WH);
+  const p_lb = iso(0,  RD, 0);
+  const p_rb = iso(RW, RD, 0);
+  const p_r  = iso(RW, 0,  0);
+  const p_tr = iso(RW, 0,  WH);
+  ctx.moveTo(p_tl.x, p_tl.y);
+  ctx.lineTo(p_lt.x, p_lt.y);
+  ctx.lineTo(p_lb.x, p_lb.y);
+  ctx.lineTo(p_rb.x, p_rb.y);
+  ctx.lineTo(p_r.x,  p_r.y);
+  ctx.lineTo(p_tr.x, p_tr.y);
+  ctx.lineTo(p_tl.x, p_tl.y);
+  ctx.stroke();
+  ctx.restore();
+
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2026,6 +2168,7 @@ document.getElementById('testBtn').addEventListener('click',()=>{
 
 // ── START ─────────────────────────────────────────────────────────
 render();
+alignTitle();
 </script>
 </body>
 </html>
